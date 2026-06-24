@@ -1,0 +1,35 @@
+How to run
+1. PostgreSQL — create database attorneys_db and update connection string in Attorneys.API/appsettings.json.
+
+2. API:
+
+cd D:\Rupesh\Projects\Attorneys\Attorneys.API
+dotnet run --launch-profile https
+Swagger: https://localhost:7063/swagger
+
+3. UI:
+
+cd D:\Rupesh\Projects\Attorneys\attorneys-ui
+npm run dev
+
+
+Login credentials
+Type	Username	Password
+Super Admin
+superadmin
+SuperAdmin@123
+Firm staff
+Firm: DEMO, User: admin
+Admin@123
+
+
+D:\Rupesh\Projects\Attorneys>dotnet ef database update --project Attorneys.Infrastructure --startup-project Attorneys.API
+Build started...
+Build succeeded.
+Applying migration '20260623174146_AddCaseDocumentAIAnalysis'.
+Done.
+
+OpenAI API key (set via environment variable, not in source control)
+
+$env:OpenAI__ApiKey = "your-openai-api-key"
+# Or run: scripts/set-openai-env.ps1

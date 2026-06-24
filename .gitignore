@@ -1,0 +1,27 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+
+## Node
+node_modules/
+dist/
+
+## Env
+.env
+.env.local
+Attorneys.AI.ManualTest/appsettings.Development.json
+Attorneys.API/appsettings.Development.json
+Open AI API secrete  key.txt
+**/*secret*
+**/*secrete*
+
+## Uploads
+App_Data/
+**/App_Data/
+
+## OS
+Thumbs.db
+.DS_Store
