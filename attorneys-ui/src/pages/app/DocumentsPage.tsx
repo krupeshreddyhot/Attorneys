@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   Alert,
@@ -19,12 +19,17 @@ import {
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import DownloadIcon from "@mui/icons-material/Download";
 import DeleteIcon from "@mui/icons-material/Delete";
+import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import api from "../../services/api";
 import type { CaseDocument } from "../../types/legal";
+import type { AiDisplayStatus } from "../../types/documentAnalysis";
 import { deleteDocument, fetchDocuments, uploadDocument } from "../../services/legalService";
+import { setCachedDisplayStatus } from "../../services/documentAnalysisApi";
 import { useAuth } from "../../context/AuthContext";
 import PageHeader from "../../components/layout/PageHeader";
 import ScrollableTable from "../../components/layout/ScrollableTable";
+import DocumentAnalysisDialog from "../../components/documents/DocumentAnalysisDialog";
+import DocumentAiStatusChip from "../../components/documents/DocumentAiStatusChip";
 
 const DocumentsPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -37,12 +42,29 @@ const DocumentsPage = () => {
   const [docs, setDocs] = useState<CaseDocument[]>([]);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [analysisDialog, setAnalysisDialog] = useState<{ open: boolean; fileId: number; fileName: string }>({
+    open: false,
+    fileId: 0,
+    fileName: "",
+  });
+  const [aiStatusOverrides, setAiStatusOverrides] = useState<Record<number, AiDisplayStatus>>({});
+
+  const handleAnalysisStatusChange = useCallback((fileId: number, status: AiDisplayStatus) => {
+    setCachedDisplayStatus(fileId, status);
+    setAiStatusOverrides((prev) => {
+      if (prev[fileId] === status) return prev;
+      return { ...prev, [fileId]: status };
+    });
+  }, []);
 
   const load = (cn?: string) => {
     fetchDocuments(cn || undefined).then(setDocs).catch(() => setDocs([]));
   };
 
-  useEffect(() => { load(filterCaseNo || undefined); }, [filterCaseNo]);
+  useEffect(() => {
+    load(filterCaseNo || undefined);
+    setAiStatusOverrides({});
+  }, [filterCaseNo]);
 
   const handleUpload = async () => {
     setError("");
@@ -135,6 +157,7 @@ const DocumentsPage = () => {
               <TableCell sx={{ display: { xs: "none", sm: "table-cell" } }}>Type</TableCell>
               <TableCell sx={{ display: { xs: "none", md: "table-cell" } }}>Description</TableCell>
               <TableCell sx={{ display: { xs: "none", sm: "table-cell" } }}>Uploaded</TableCell>
+              <TableCell sx={{ display: { xs: "none", md: "table-cell" } }}>AI Status</TableCell>
               <TableCell align="right">Actions</TableCell>
             </TableRow>
           </TableHead>
@@ -150,7 +173,19 @@ const DocumentsPage = () => {
                 <TableCell sx={{ display: { xs: "none", sm: "table-cell" } }}>
                   {new Date(doc.uploadedAtUtc).toLocaleString()}
                 </TableCell>
+                <TableCell sx={{ display: { xs: "none", md: "table-cell" } }}>
+                  <DocumentAiStatusChip
+                    fileId={doc.fileId}
+                    statusOverride={aiStatusOverrides[doc.fileId]}
+                  />
+                </TableCell>
                 <TableCell align="right" sx={{ whiteSpace: "nowrap" }}>
+                  <IconButton
+                    aria-label="AI Summary"
+                    onClick={() => setAnalysisDialog({ open: true, fileId: doc.fileId, fileName: doc.fileName })}
+                  >
+                    <AutoAwesomeIcon />
+                  </IconButton>
                   <IconButton aria-label="Download" onClick={() => handleDownload(doc)}><DownloadIcon /></IconButton>
                   {isAdministrator && (
                     <IconButton aria-label="Delete" onClick={() => handleDelete(doc.fileId)}><DeleteIcon /></IconButton>
@@ -161,6 +196,15 @@ const DocumentsPage = () => {
           </TableBody>
         </Table>
       </ScrollableTable>
+
+      <DocumentAnalysisDialog
+        key={analysisDialog.fileId}
+        open={analysisDialog.open}
+        fileId={analysisDialog.fileId}
+        fileName={analysisDialog.fileName}
+        onClose={() => setAnalysisDialog((prev) => ({ ...prev, open: false }))}
+        onStatusChange={handleAnalysisStatusChange}
+      />
     </>
   );
 };
